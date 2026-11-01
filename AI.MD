@@ -27,6 +27,7 @@
 | 2026-11-01 | `.gitignore`、`README.md`、`AI.MD`、`.vscode/*`、`.clangd` | 仓库骨架与构建/烧录任务配置 | ✅ 采用 | 工具链 4 个 exe 路径逐条 `ls` 确认存在；4 个 `.vscode/*.json` 用 `json.load` 校验通过；提交后 `git status` 无 `build/` 条目 | `dc4de94` |
 | 2026-11-01 | `README.md`、`AI.MD`、`.vscode/tasks.json` | 写入学号姓名与仓库名；烧录 elf 名同步为 `ec-round2-260411615.elf` | ✅ 采用 | 人工核对学号姓名与任务书 §5.1 命名规则；`grep` 确认仓库内无残留旧工程名 | `432a936` |
 | 2026-11-01 | `README.md` §8、`.gitignore` | 明确「仓库只放待提交文件」，加草稿箱防御规则（草稿箱在仓库外 `E:\STM32\_scratch\`） | ✅ 采用 | `git ls-files` 仍为 8 个交付文件、无草稿类路径；`git status` 仅两文件变更 | `9c791c2` |
+| 2026-11-01 | `.gitignore` | 修正防御规则漏匹配：原 `*_test.c` / `lab_*/` 拦不住前缀命名 | ✅ 采用 | `git check-ignore` 逐个判定 7 个探针全部命中（首次实测发现 `test_probe.c`、`lab_probe.c` 漏网，改后才过） | `8a02dbc` |
 
 ---
 
