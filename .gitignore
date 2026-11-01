@@ -36,10 +36,12 @@ _tmp/
 _scratch/
 scratch/
 lab/
-lab_*/
-test_*/
+lab*/
+lab_*
+test/
+test_*
 *_test.c
-*_old.c
+*_old.*
 *_backup*
 copy of *
 playground/
