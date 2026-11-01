@@ -1,5 +1,6 @@
-# ec-round2 —— 四自由度舵机机械臂固件
+# ec-round2-260411615 —— 四自由度舵机机械臂固件
 
+> 学号 **260411615** ｜ 姓名 **万江东** ｜ 仓库 `ec-round2-260411615`
 > CVIR 机甲大师 2026 电控组二轮考核
 > 主控 **STM32F103C8T6**（江协科技最小系统核心板）｜CubeMX(CMake) + HAL + arm-none-eabi-gcc
 >
@@ -25,10 +26,10 @@ cmake --build --preset Release
 ```bash
 ST-LINK 烧录见 .vscode/tasks.json 的 "Flash (Debug)" 任务（Ctrl+Shift+B 选）
 # 或命令行：
-STM32_Programmer_CLI -c port=SWD -w build/Debug/ec-round2.elf -v -rst
+STM32_Programmer_CLI -c port=SWD -w build/Debug/ec-round2-260411615.elf -v -rst
 ```
 
-> **`Ctrl+Shift+B` 只是编译，不烧板。** 编译成功看 `build/Debug/ec-round2.elf` 的时间戳；
+> **`Ctrl+Shift+B` 只是编译，不烧板。** 编译成功看 `build/Debug/ec-round2-260411615.elf` 的时间戳；
 > 烧录成功必须看到 `Download verified successfully` 或 `File download complete`。
 > 这两个极易混淆（10-31 踩过两次）。
 

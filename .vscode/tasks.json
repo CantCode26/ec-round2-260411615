@@ -43,7 +43,7 @@
       "command": "C:/Users/27055/AppData/Local/STM32Cube/bundles/programmer/2.23.0/bin/STM32_Programmer_CLI.exe",
       "args": [
         "-c", "port=SWD", "mode=UR", "reset=HWrst",
-        "-w", "${workspaceFolder}/build/Debug/ec-round2.elf",
+        "-w", "${workspaceFolder}/build/Debug/ec-round2-260411615.elf",
         "-v", "-hardRst", "-rst"
       ],
       "dependsOn": "2. Build (Debug)",
