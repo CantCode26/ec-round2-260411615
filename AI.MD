@@ -24,7 +24,7 @@
 
 | 日期 | 文件 / 模块 | 用途 | 是否采用 | 验证方式 | commit |
 |---|---|---|---|---|---|
-| 2026-11-01 | `.gitignore`、`README.md`、`AI.MD`、`.vscode/*` | 仓库骨架与构建/烧录任务配置 | ✅ 采用 | 工具链 4 个 exe 路径逐条 `ls` 确认存在；`.gitignore` 提交后 `git status` 无 `build/` 条目 | （首个提交） |
+| 2026-11-01 | `.gitignore`、`README.md`、`AI.MD`、`.vscode/*`、`.clangd` | 仓库骨架与构建/烧录任务配置 | ✅ 采用 | 工具链 4 个 exe 路径逐条 `ls` 确认存在；4 个 `.vscode/*.json` 用 `json.load` 校验通过；提交后 `git status` 无 `build/` 条目 | `dc4de94` |
 | | | | | | |
 
 ---
