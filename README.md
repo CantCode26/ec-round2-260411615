@@ -101,3 +101,34 @@ protocol/        帧编解码 + crc8，**全工程只有一份**（待建）
 
 > 新增 `.c` 必须同时登记到根 `CMakeLists.txt` 的 `target_sources()` 和
 > `target_include_directories()`，否则别人 clone 下来构建失败。
+
+## 8 仓库放什么、不放什么
+
+**原则：这个仓库里只有"能讲清、能交付"的东西。** 其余一律放仓库外的草稿箱。
+
+| | 放仓库 | 放草稿箱 `E:\STM32\_scratch\` |
+|---|---|---|
+| 源码 | `application/` `bsp/` `components/` `protocol/` 里的正式代码 | 临时验证用的实验代码、别人代码的片段 |
+| 工程 | `.ioc`、`CMakeLists.txt`、`CMakePresets.json`、`cmake/`、`Drivers/`、`Core/` | 单独的 HAL 小实验工程（`hal-lab\`） |
+| 测试 | —（本工程无仓库内单测） | 协议编解码的 PC 单测、CRC 对比脚本 |
+| 文档 | `README.md`、`AI.MD`、`.vscode/`、`.clangd`、`.gitignore` | 半成品笔记、截图、抓包记录 |
+| 产物 | —（一律不提交） | 日志、CSV、串口抓包、导出的二进制 |
+
+`.gitignore` 里已加防御规则（`_scratch/` `lab*/` `*_test.c` `*_backup*` 等），
+但**真正的隔离靠目录分离，不靠 `.gitignore`** —— 它挡不住 `git add -f` 和 IDE 的"添加全部"。
+
+### 从草稿箱转正的固定动作
+
+1. 在 `_scratch` 里跑通、验证过；
+2. 复制到仓库正确位置，**按本仓库规范重写**（`uint8_t` 不用 `u8`、头文件守卫唯一、C17）；
+3. 登记进 `CMakeLists.txt` 的两处（`target_sources()` + `target_include_directories()`）；
+4. commit，message 写清功能，末尾带 `AI:` / `Verified:`。
+
+### 提交前 60 秒自查
+
+```bash
+git status --short          # 有没有冒出奇怪的文件
+git ls-files | grep -Ei "_scratch|lab|test_|backup|copy of"   # 应为空
+ls *.uvprojx *.ewp 2>/dev/null                                # 应为空（Keil/IAR 禁止）
+```
+
