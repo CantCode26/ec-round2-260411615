@@ -25,7 +25,7 @@
 | 日期 | 文件 / 模块 | 用途 | 是否采用 | 验证方式 | commit |
 |---|---|---|---|---|---|
 | 2026-11-01 | `.gitignore`、`README.md`、`AI.MD`、`.vscode/*`、`.clangd` | 仓库骨架与构建/烧录任务配置 | ✅ 采用 | 工具链 4 个 exe 路径逐条 `ls` 确认存在；4 个 `.vscode/*.json` 用 `json.load` 校验通过；提交后 `git status` 无 `build/` 条目 | `dc4de94` |
-| 2026-11-01 | `README.md`、`AI.MD`、`.vscode/tasks.json` | 写入学号姓名与仓库名；烧录 elf 名同步为 `ec-round2-260411615.elf` | ✅ 采用 | 人工核对学号姓名与任务书 §5.1 命名规则；`grep` 确认仓库内无残留旧工程名 | （本条提交） |
+| 2026-11-01 | `README.md`、`AI.MD`、`.vscode/tasks.json` | 写入学号姓名与仓库名；烧录 elf 名同步为 `ec-round2-260411615.elf` | ✅ 采用 | 人工核对学号姓名与任务书 §5.1 命名规则；`grep` 确认仓库内无残留旧工程名 | `432a936` |
 
 ---
 
