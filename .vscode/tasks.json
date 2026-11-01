@@ -1,0 +1,83 @@
+{
+  "version": "2.0.0",
+  "// 为什么全是 type=process": "shell 模式会包一层 powershell -Command，路径里 4.4.0+st.1 这种字符会被截断，报『参数格式不正确 - -Command』。process 直接 CreateProcess 绕开整条 shell 链（10-31 踩过）。",
+  "options": {
+    "cwd": "${workspaceFolder}",
+    "env": {
+      "PATH": "C:/Users/27055/AppData/Local/STM32Cube/bundles/gnu-tools-for-stm32/14.3.1+st.2/bin;C:/Users/27055/AppData/Local/STM32Cube/bundles/ninja/1.13.2+st.1/bin;C:/Users/27055/AppData/Local/STM32Cube/bundles/cmake/4.4.0+st.1/bin;${env:PATH}"
+    }
+  },
+  "tasks": [
+    {
+      "label": "1. Configure (Debug)",
+      "type": "process",
+      "command": "C:/Users/27055/AppData/Local/STM32Cube/bundles/cmake/4.4.0+st.1/bin/cmake.exe",
+      "args": ["--preset", "Debug"],
+      "problemMatcher": []
+    },
+    {
+      "label": "2. Build (Debug)",
+      "type": "process",
+      "command": "C:/Users/27055/AppData/Local/STM32Cube/bundles/cmake/4.4.0+st.1/bin/cmake.exe",
+      "args": ["--build", "--preset", "Debug"],
+      "group": { "kind": "build", "isDefault": true },
+      "problemMatcher": ["$gcc"]
+    },
+    {
+      "label": "3. Build (Release)",
+      "type": "process",
+      "command": "C:/Users/27055/AppData/Local/STM32Cube/bundles/cmake/4.4.0+st.1/bin/cmake.exe",
+      "args": ["--build", "--preset", "Release"],
+      "group": "build",
+      "problemMatcher": ["$gcc"]
+    },
+    {
+      "label": "4. Configure + Build (Debug)",
+      "dependsOrder": "sequence",
+      "dependsOn": ["1. Configure (Debug)", "2. Build (Debug)"],
+      "problemMatcher": []
+    },
+    {
+      "label": "5. Flash (Debug)",
+      "type": "process",
+      "command": "C:/Users/27055/AppData/Local/STM32Cube/bundles/programmer/2.23.0/bin/STM32_Programmer_CLI.exe",
+      "args": [
+        "-c", "port=SWD", "mode=UR", "reset=HWrst",
+        "-w", "${workspaceFolder}/build/Debug/ec-round2.elf",
+        "-v", "-hardRst", "-rst"
+      ],
+      "dependsOn": "2. Build (Debug)",
+      "problemMatcher": [],
+      "// 判据": "必须看到 Download verified successfully 或 File download complete。看到 Memory region/FLASH xx% 那是编译统计，不是烧录。"
+    },
+    {
+      "label": "6. 列出串口（找 CDC 是哪个 COM）",
+      "type": "process",
+      "command": "C:/Windows/System32/WindowsPowerShell/v1.0/powershell.exe",
+      "args": [
+        "-NoProfile",
+        "-Command",
+        "Get-CimInstance Win32_SerialPort | Select-Object DeviceID,Name,PNPDeviceID | Format-List"
+      ],
+      "problemMatcher": []
+    },
+    {
+      "label": "7. 查 ST-Link 是否被识别",
+      "type": "process",
+      "command": "C:/Windows/System32/WindowsPowerShell/v1.0/powershell.exe",
+      "args": [
+        "-NoProfile",
+        "-Command",
+        "Get-PnpDevice -PresentOnly | Where-Object { $_.FriendlyName -match 'ST-LINK|STM32' } | Select-Object Status,Class,FriendlyName | Format-Table -AutoSize"
+      ],
+      "problemMatcher": []
+    },
+    {
+      "label": "8. Clean（删 build 目录）",
+      "type": "process",
+      "command": "C:/Windows/System32/cmd.exe",
+      "args": ["/c", "if exist build rmdir /s /q build && echo build/ 已删除"],
+      "problemMatcher": []
+    }
+  ]
+}

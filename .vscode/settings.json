@@ -1,0 +1,45 @@
+{
+  "// 说明": "这份文件解决『满屏红波浪线但编译能过』。原理见工作台 00-控制台/DECISIONS.md。",
+  "// compileCommands": "cmake --preset Debug 的产物，提供 -I/-D 给 IntelliSense",
+  "C_Cpp.default.compileCommands": "${workspaceFolder}/build/Debug/compile_commands.json",
+  "// compilerPath": "给交叉编译器自带的系统头（arm-none-eabi/include 下的 stdint.h），缺了会另报一串找不到头文件",
+  "C_Cpp.default.compilerPath": "C:/Users/27055/AppData/Local/STM32Cube/bundles/gnu-tools-for-stm32/14.3.1+st.2/bin/arm-none-eabi-gcc.exe",
+  "C_Cpp.default.intelliSenseMode": "gcc-arm",
+  "C_Cpp.default.cStandard": "c17",
+  "C_Cpp.default.cppStandard": "c++17",
+  "C_Cpp.default.includePath": [
+    "${workspaceFolder}/Core/Inc",
+    "${workspaceFolder}/Drivers/STM32F1xx_HAL_Driver/Inc",
+    "${workspaceFolder}/Drivers/CMSIS/Device/ST/STM32F1xx/Include",
+    "${workspaceFolder}/Drivers/CMSIS/Include"
+  ],
+
+  "// cmake": "cube-cmake 会自己拉 gcc/ninja，所以保持 CubeMX 原样即可；关掉 open 时的自动 configure 避免弹 No configure preset is active",
+  "cmake.cmakePath": "cube-cmake",
+  "cmake.configureOnOpen": false,
+  "cmake.useCMakePresets": "always",
+
+  "clangd.arguments": [
+    "--compile-commands-dir=${workspaceFolder}/build/Debug",
+    "--query-driver=${env:CUBE_BUNDLE_PATH}/gnu-tools-for-stm32/14.3.1+st.2/bin/arm-none-eabi-gcc.exe",
+    "--background-index",
+    "--clang-tidy=false"
+  ],
+
+  "files.encoding": "utf8",
+  "files.eol": "\r\n",
+  "files.insertFinalNewline": true,
+  "files.trimTrailingWhitespace": true,
+  "files.associations": {
+    "*.h": "c",
+    "*.ioc": "ini",
+    "*.ld": "linkerscript"
+  },
+  "editor.rulers": [100],
+  "terminal.integrated.defaultProfile.windows": "PowerShell",
+
+  "search.exclude": {
+    "**/build": true,
+    "**/Drivers": true
+  }
+}

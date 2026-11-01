@@ -1,0 +1,8 @@
+# clangd 配置 —— 任务书 2.2 要求「打开 CMAKE_EXPORT_COMPILE_COMMANDS，.clangd 指向 build/Debug」
+# 没有这个文件，clangd 只在工程根目录找 compile_commands.json，找不到就满屏红。
+CompileFlags:
+  CompilationDatabase: build/Debug
+Diagnostics:
+  UnusedIncludes: None
+  Suppress:
+    - unknown-argument
