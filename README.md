@@ -38,7 +38,7 @@ STM32_Programmer_CLI -c port=SWD -w build/Debug/ec-round2-260411615.elf -v -rst
 | 项 | 版本 | 备注 |
 |---|---|---|
 | MCU | STM32F103C8T6（Cortex-M3，64KB Flash / 20KB RAM，LQFP48） | |
-| STM32CubeMX | 6.1x.x | **必须 ≥ 6.12**，项目管理器选 **CMake** 工具链 |
+| STM32CubeMX | **6.18.1** | **必须 ≥ 6.12**，项目管理器选 **CMake** 工具链 |
 | CMake | 4.4.0+st.1 | ≥ 3.22 |
 | Ninja | 1.13.2+st.1 | |
 | arm-none-eabi-gcc | 14.3.1+st.2 | STM32CubeCLT 自带版本 |
@@ -60,7 +60,9 @@ STM32_Programmer_CLI -c port=SWD -w build/Debug/ec-round2-260411615.elf -v -rst
 | 调试串口 | PA9 / PA10 | USART1 | USB-TTL：模块 RXD→PA9、TXD→PA10、GND 共地 |
 | MPU6050 | PB6 / PB7 | I2C1 | SCL / SDA，400kHz，模块自带 4.7k 上拉 |
 | USB | PA11 / PA12 | USB FS Device | 板载 micro-USB 座（已接死） |
-| 按键 | PB12 | GPIO 输入 + 上拉 | 一端 PB12，一端 GND |
+| 按键 模式 | PB12 | GPIO 输入 + 上拉 | 一端 PB12，一端 GND |
+| 按键 复位/回零 | PB13 | GPIO 输入 + 上拉 | 一端 PB13，一端 GND |
+| 按键 预留 | PB14 | GPIO 输入 + 上拉 | 一端 PB14，一端 GND（暂不接也需保持上拉） |
 | LED | PC13 | GPIO 输出 | 板载，**低电平点亮** |
 
 **供电顺序**：先接共地线 → 舵机电源上电 → 主控上电；断电相反。
@@ -90,13 +92,18 @@ STM32_Programmer_CLI -c port=SWD -w build/Debug/ec-round2-260411615.elf -v -rst
 ## 7 目录结构
 
 ```
-Core/            CubeMX 生成（只改 USER CODE 区）
-Drivers/         HAL + CMSIS（CubeMX 生成，不改）
-cmake/           工具链文件（CubeMX 生成，**不得手改**）
-application/     标定、插补、状态机、故障处理   （待建）
-bsp/             PWM / I2C / USART / GPIO / USB 传输层（待建）
-components/      MPU6050 驱动、PID 等           （待建）
-protocol/        帧编解码 + crc8，**全工程只有一份**（待建）
+ec-round2-260411615.ioc  CubeMX 工程文件（**必须提交**，评审用它重新生成对照）
+CMakeLists.txt           根构建脚本（CubeMX 只生成一次，可自由改：C17 / -Wall -Wextra 在这里）
+CMakePresets.json        Debug / Release 两预设
+cmake/                   工具链文件（CubeMX 生成，**不得手改**）
+Core/                    CubeMX 生成（只改 USER CODE 区）
+Drivers/                 HAL + CMSIS（CubeMX 生成，不改）
+Middlewares/             ST USB Device Library（CDC 最小集 9 个文件）
+USB_DEVICE/              CDC 类应用层（App/ + Target/）
+application/             标定、插补、状态机、故障处理   （待建）
+bsp/                     PWM / I2C / USART / GPIO / USB 传输层（待建）
+components/              MPU6050 驱动、PID 等           （待建）
+protocol/                帧编解码 + crc8，**全工程只有一份**（待建）
 ```
 
 > 新增 `.c` 必须同时登记到根 `CMakeLists.txt` 的 `target_sources()` 和
