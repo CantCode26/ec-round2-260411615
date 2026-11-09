@@ -47,6 +47,8 @@
 /* Private variables ---------------------------------------------------------*/
 
 /* USER CODE BEGIN PV */
+/*全局毫秒时基，TIM2更新中断每 1ms 自增一次*/
+volatile uint32_t g_tick_ms = 0;  //volatile防止编译器把值缓存进寄存器导致主循环死等； uint32_t回绕周期 2^32ms 优于其它数据类型
 
 /* USER CODE END PV */
 
@@ -96,6 +98,10 @@ int main(void)
   MX_USART1_UART_Init();
   MX_USB_DEVICE_Init();
   /* USER CODE BEGIN 2 */
+  //启动计数器
+  if (HAL_TIM_Base_Start_IT(&htim2) != HAL_OK) {
+    Error_Handler();
+  }
 
   /* USER CODE END 2 */
 
@@ -157,6 +163,12 @@ void SystemClock_Config(void)
 }
 
 /* USER CODE BEGIN 4 */
+//回调函数定义时基机制
+void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim) {
+  if (htim->Instance == TIM2){   //确认定时器
+    g_tick_ms++;  //每1ms计数加一
+  }
+}
 
 /* USER CODE END 4 */
 
