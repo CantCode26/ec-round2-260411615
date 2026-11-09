@@ -28,6 +28,7 @@
 | 2026-11-01 | `README.md`、`AI.MD`、`.vscode/tasks.json` | 写入学号姓名与仓库名；烧录 elf 名同步为 `ec-round2-260411615.elf` | ✅ 采用 | 人工核对学号姓名与任务书 §5.1 命名规则；`grep` 确认仓库内无残留旧工程名 | `432a936` |
 | 2026-11-01 | `README.md` §8、`.gitignore` | 明确「仓库只放待提交文件」，加草稿箱防御规则（草稿箱在仓库外 `E:\STM32\_scratch\`） | ✅ 采用 | `git ls-files` 仍为 8 个交付文件、无草稿类路径；`git status` 仅两文件变更 | `9c791c2` |
 | 2026-11-01 | `.gitignore` | 修正防御规则漏匹配：原 `*_test.c` / `lab_*/` 拦不住前缀命名 | ✅ 采用 | `git check-ignore` 逐个判定 7 个探针全部命中（首次实测发现 `test_probe.c`、`lab_probe.c` 漏网，改后才过） | `8a02dbc` |
+| 2026-11-08 | `.ioc`、`Core/**`、`USB_DEVICE/**`、`Middlewares/**`、`CMakeLists.txt`、`cmake/**`、`STM32F103xx_FLASH.ld` | CubeMX 6.18 生成 S0 正式工程；修正 PLL ×6→×9、TIM3 CH4 脉宽 0→1500、`CMAKE_C_STANDARD` 11→17 与 `-Wall -Wextra`、目录上移到仓库根 | ✅ 采用 | 编译 `0 error / 10 warning`（10 条全为 ST 生成代码的 `-Wunused-parameter`）；FLASH 38,744 B=59.12%、RAM 7,816 B=38.16%。**2026-11-09 上真板实测**：`Download verified successfully`（37.84 KB @0x08000000，2.374 s）；运行态 `RCC_CFGR=0x001D040A`（SWS=PLL / PPRE1=/2→APB1 36MHz / PLLMUL=×9 / USBPRE=0→USB 48MHz）、`RCC_APB1ENR=0x10A00003`（USB 门控开）、`PRIMASK=0`、`PC=0x08008D9C`→`addr2line` 定位 `main.c:104` 的 `while(1)`；USB 枚举 `USB\VID_0483&PID_5740` → `USB 串行设备 (COM10)`、`ConfigManagerErrorCode=0`、`IsOpen=True`、`USB_DADDR=0x8E`（地址 14、EF=1）、`CNTR` 由 `0xBF0C`（FSUSP=1）变为 `0xBF00`（已退出挂起） | `301b17b` |
 
 ---
 
@@ -38,6 +39,7 @@
 | 日期 | 生成内容 | 放弃原因 |
 |---|---|---|
 | 2026-11-01 | 用 `MultiTimer` 第三方定时器库统一管理 1ms 节拍 | 多一层依赖，答辩时要解释它的内部实现；本项目只需要一个 TIM2 中断，自己写 10 行就够 |
+| 2026-11-09 | 在 `main.c` 里加 PC13 LED 心跳 + 自检打印，用来判断固件到底跑没跑起来 | 越过了 S0「只做配置、不写功能」的边界，而且会和 S1 T0 要做的「自检三行 + LED 1Hz」重复造一遍。改用 ST-Link 只读 `PC` / `PRIMASK` / `RCC_CFGR` 判定，零代码改动拿到等价结论（`PC=main.c:104`、`PRIMASK=0`） |
 | | | |
 
 ---
