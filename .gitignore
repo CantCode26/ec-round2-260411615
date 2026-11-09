@@ -54,6 +54,10 @@ Thumbs.db
 Desktop.ini
 .DS_Store
 
+# STM32Cube VS Code 扩展的本机状态（含本机路径与 bundle 版本锁，2026-11-09 加）
+.settings/
+*.store.json
+
 # 注意：.vscode/ **要提交**（任务书 2.2 要求「VS Code 配置一并提交」），
 # 所以这里不排除 .vscode；只排除里面可能产生的日志。
 .vscode/*.log
