@@ -19,6 +19,7 @@
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
 #include "i2c.h"
+#include "stm32f1xx_hal_gpio.h"
 #include "tim.h"
 #include "usart.h"
 #include "usb_device.h"
@@ -38,6 +39,8 @@
 /* USER CODE BEGIN PD */
 #define LED_TOGGLE_MS 500 //定义一个宏：LED小灯的半周期
 
+#define KEY_DEBOUNCE_CNT 20  //按键消抖检测次数
+#define KEY_NUM 3  //数组长度/按键循环上界
 /* USER CODE END PD */
 
 /* Private macro -------------------------------------------------------------*/
@@ -51,11 +54,23 @@
 /*全局毫秒时基，TIM2更新中断每 1ms 自增一次*/
 volatile uint32_t g_tick_ms = 0;  //volatile防止编译器把值缓存进寄存器导致主循环死等； uint32_t回绕周期 2^32ms 优于其它数据类型
 
+volatile uint32_t g_key_press[KEY_NUM] = {0};  //按下次数绝对值
+volatile uint32_t g_key_held[KEY_NUM] = {0};  //按键按下状态，长按也是有操作的
+
+static uint8_t s_cnt[KEY_NUM] = {0};  //消抖计数
+static uint8_t s_stable[KEY_NUM] = {1, 1, 1};  //消抖后的电平
+static uint8_t s_event[KEY_NUM] = {0};  //按下沿标志
+static uint32_t s_last_scan_tick = 0;  //1ms采样闸门，防止s_cnt暴涨卡死
+
+
+static GPIO_TypeDef *const s_port[KEY_NUM] = {KEY_MODE_GPIO_Port, KEY_RESET_GPIO_Port, KEY_SPARE_GPIO_Port};
+static const uint16_t s_pin[KEY_NUM] = {KEY_MODE_Pin, KEY_RESET_Pin, KEY_SPARE_Pin};
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
 void SystemClock_Config(void);
 /* USER CODE BEGIN PFP */
+static void key_scan(void);  //消抖函数的声明，定义在BEGIN 4
 
 /* USER CODE END PFP */
 
@@ -115,11 +130,18 @@ int main(void)
 
     /* USER CODE BEGIN 3 */
 
-    uint32_t now = g_tick_ms;  //心跳指示灯
+    //心跳指示灯
+    uint32_t now = g_tick_ms;
 
     if ((now - last_toggle) >= LED_TOGGLE_MS){
       last_toggle += LED_TOGGLE_MS;
       HAL_GPIO_TogglePin(LED_GPIO_Port, LED_Pin);
+    }
+
+    //按键消抖逻辑的接入
+    if (now != s_last_scan_tick) {
+      s_last_scan_tick = now;
+      key_scan();
     }
 
   }
@@ -177,6 +199,32 @@ void SystemClock_Config(void)
 void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim) {
   if (htim->Instance == TIM2){   //确认定时器
     g_tick_ms++;  //每1ms计数加一
+  }
+}
+
+//按键消抖：每 1ms 调用一次（由主循环的 tick 闸门保证），连续 KEY_DEBOUNCE_CNT 次
+//电平一致才认可状态变化，避免机械触点抖动被识别成多次按下
+static void key_scan(void) {
+  for (int i = 0; i < KEY_NUM; i++) {
+    //按下=0（引脚经按键接地），松开=1（内部上拉）
+    uint8_t raw = (HAL_GPIO_ReadPin(s_port[i], s_pin[i]) == GPIO_PIN_RESET) ? 0 : 1;
+
+    if (raw == s_stable[i]) {
+      s_cnt[i] = 0;                        //与稳定态一致：计数清零，不做动作
+    } else {
+      s_cnt[i]++;                          //与稳定态不一致：进入观察期，开始累加
+
+      if (s_cnt[i] >= KEY_DEBOUNCE_CNT) {  //连续 20 次(20ms)都不一致 → 确认真的翻转
+        s_cnt[i] = 0;
+        s_stable[i] = raw;                 //更新稳定态
+
+        if (raw == 0) {                    //翻转后的新状态是「按下」→ 才记一次事件
+          s_event[i] = 1;                  //一次性标志，留给 T6 状态机读后清零
+          g_key_press[i]++;                //累计按下次数，供 ST-Link 只读验证
+        }
+      }
+    }
+    g_key_held[i] = (s_stable[i] == 0) ? 1 : 0;  //当前是否按住，供长按/组合键判断
   }
 }
 
