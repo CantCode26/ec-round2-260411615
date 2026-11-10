@@ -111,15 +111,16 @@ int main(void)
   /* USER CODE BEGIN WHILE */
   while (1)
   {
-    uint32_t now = g_tick_ms;
+    /* USER CODE END WHILE */
+
+    /* USER CODE BEGIN 3 */
+
+    uint32_t now = g_tick_ms;  //心跳指示灯
 
     if ((now - last_toggle) >= LED_TOGGLE_MS){
       last_toggle += LED_TOGGLE_MS;
       HAL_GPIO_TogglePin(LED_GPIO_Port, LED_Pin);
     }
-    /* USER CODE END WHILE */
-
-    /* USER CODE BEGIN 3 */
 
   }
   /* USER CODE END 3 */
