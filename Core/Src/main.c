@@ -36,6 +36,7 @@
 
 /* Private define ------------------------------------------------------------*/
 /* USER CODE BEGIN PD */
+#define LED_TOGGLE_MS 500 //定义一个宏：LED小灯的半周期
 
 /* USER CODE END PD */
 
@@ -71,6 +72,7 @@ int main(void)
 {
 
   /* USER CODE BEGIN 1 */
+  uint32_t last_toggle = 0;  //初始化一个上次翻转的时间点
 
   /* USER CODE END 1 */
 
@@ -109,9 +111,16 @@ int main(void)
   /* USER CODE BEGIN WHILE */
   while (1)
   {
+    uint32_t now = g_tick_ms;
+
+    if ((now - last_toggle) >= LED_TOGGLE_MS){
+      last_toggle += LED_TOGGLE_MS;
+      HAL_GPIO_TogglePin(LED_GPIO_Port, LED_Pin);
+    }
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
+
   }
   /* USER CODE END 3 */
 }
