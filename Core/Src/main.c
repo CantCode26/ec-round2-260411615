@@ -80,7 +80,7 @@ volatile uint32_t g_tx_sent;  //已交给 USB 外设的字节数，只代表「�
 void SystemClock_Config(void);
 /* USER CODE BEGIN PFP */
 static void key_scan(void);  //消抖函数的声明，定义在BEGIN 4
-static uint32_t ring_push(const uint8_t *p, uint16_t len);
+static uint16_t ring_push(const uint8_t *p, uint16_t len);
 
 /* USER CODE END PFP */
 
