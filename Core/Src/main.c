@@ -19,6 +19,7 @@
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
 #include "i2c.h"
+#include "stm32f103xb.h"
 #include "stm32f1xx_hal_gpio.h"
 #include "tim.h"
 #include "usart.h"
@@ -74,6 +75,8 @@ static uint16_t s_tx_wr;  //写索引=下一个要写的位置。只增不减、
 static uint16_t s_tx_rd;  //读索引=下一个要读的位置。同样只增不减，且只能由「发送成功」那一步推进；任何一处把它赋 0 都会让 used 算错
 volatile uint32_t g_tx_drop;  //因缓冲满而丢弃的字节数。>0 说明 printf 速度超过 USB 消费速度，是容量不足的唯一硬证据；代码不读它，加 volatile 防止被优化掉
 volatile uint32_t g_tx_sent;  //已交给 USB 外设的字节数，只代表「已入端点」不代表主机收到；与 g_tx_drop 一起核对总量守恒
+
+static uint32_t s_rst_csr;  //复位标志快照：必须在 __HAL_RCC_CLEAR_RESET_FLAGS() 之前读，之后 reset_cause() 只认这个值——标志一旦清掉，寄存器里就全是 0
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -82,6 +85,7 @@ void SystemClock_Config(void);
 static void key_scan(void);  //消抖函数的声明，定义在BEGIN 4
 static uint16_t ring_push(const uint8_t *p, uint16_t len);  //环形缓冲器的声明
 int _write(int file, char *ptr, int len);
+static const char *reset_cause(void);
 
 /* USER CODE END PFP */
 
@@ -99,6 +103,9 @@ int main(void)
 
   /* USER CODE BEGIN 1 */
   uint32_t last_toggle = 0;  //初始化一个上次翻转的时间点
+
+  s_rst_csr = RCC->CSR;  //读取整个寄存器
+  __HAL_RCC_CLEAR_RESET_FLAGS();  //写RMVF
 
   /* USER CODE END 1 */
 
@@ -268,6 +275,29 @@ int _write(int file, char *ptr, int len) {
   return len;
 }
 
+
+static const char *reset_cause(void) {
+  if (s_rst_csr & RCC_CSR_PORRSTF) {
+    return "POR";
+  }
+  if (s_rst_csr & RCC_CSR_SFTRSTF) {
+    return "PIN";
+  }
+  if (s_rst_csr & RCC_CSR_PINRSTF) {
+    return "SFT";
+  }
+  if (s_rst_csr & RCC_CSR_IWDGRSTF) {
+    return "IWDG";
+  }
+  if (s_rst_csr & RCC_CSR_WWDGRSTF) {
+    return "WWDG";
+  }
+  if (s_rst_csr & RCC_CSR_LPWRRSTF) {
+    return "LPWR";
+  }
+
+  return "UNK";
+}
 /* USER CODE END 4 */
 
 /**
