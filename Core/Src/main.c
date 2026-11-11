@@ -41,6 +41,9 @@
 
 #define KEY_DEBOUNCE_CNT 20  //按键消抖检测次数
 #define KEY_NUM 3  //数组长度/按键循环上界
+
+#define TX_RING_SIZE 256U  //必须为 2 的幂，才能用按位与代替取余；256B ≈ 11 帧状态帧（23B/帧），50Hz 下约 0.2s 缓冲余量
+#define TX_RING_MASK (TX_RING_SIZE - 1U)  //物理下标掩码：wr & MASK 等价于 wr % 256。若把容量改成非 2 的幂（如 200），& 199 不再等于 % 200，数据错位而编译零警告
 /* USER CODE END PD */
 
 /* Private macro -------------------------------------------------------------*/
@@ -65,12 +68,19 @@ static uint32_t s_last_scan_tick = 0;  //1ms采样闸门，防止s_cnt暴涨卡�
 
 static GPIO_TypeDef *const s_port[KEY_NUM] = {KEY_MODE_GPIO_Port, KEY_RESET_GPIO_Port, KEY_SPARE_GPIO_Port};
 static const uint16_t s_pin[KEY_NUM] = {KEY_MODE_Pin, KEY_RESET_Pin, KEY_SPARE_Pin};
+
+static uint8_t s_tx_ring[TX_RING_SIZE];  //环形缓冲器本体：printf 出来的字节先落这里，等 USB 空闲再由 cdc_pump 搬走
+static uint16_t s_tx_wr;  //写索引=下一个要写的位置。只增不减、永不手动归零；靠 uint16 自然溢出回绕，差值 wr-rd 在模 65536 下恒等于真实已用字节数
+static uint16_t s_tx_rd;  //读索引=下一个要读的位置。同样只增不减，且只能由「发送成功」那一步推进；任何一处把它赋 0 都会让 used 算错
+volatile uint32_t g_tx_drop;  //因缓冲满而丢弃的字节数。>0 说明 printf 速度超过 USB 消费速度，是容量不足的唯一硬证据；代码不读它，加 volatile 防止被优化掉
+volatile uint32_t g_tx_sent;  //已交给 USB 外设的字节数，只代表「已入端点」不代表主机收到；与 g_tx_drop 一起核对总量守恒
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
 void SystemClock_Config(void);
 /* USER CODE BEGIN PFP */
 static void key_scan(void);  //消抖函数的声明，定义在BEGIN 4
+static uint32_t ring_push(const uint8_t *p, uint16_t len);
 
 /* USER CODE END PFP */
 
@@ -226,6 +236,26 @@ static void key_scan(void) {
     }
     g_key_held[i] = (s_stable[i] == 0) ? 1 : 0;  //当前是否按住，供长按/组合键判断
   }
+}
+
+//环形缓冲器的定义
+static uint16_t ring_push(const uint8_t *p, uint16_t len) {
+  uint16_t used = (uint16_t)(s_tx_wr - s_tx_rd);  //强转防止整型提升导致回绕偏差， 不转会的到负数
+
+  uint16_t spare = TX_RING_SIZE - used;
+
+  //收敛 spare（缓冲剩余空间）
+  if (len > spare) {
+    g_tx_drop += (len - spare);
+    len = spare;
+  }
+  //逐字节搬运
+  for (int i = 0; i < len; i++) {
+    s_tx_ring[s_tx_wr & TX_RING_MASK] = p[i];
+    s_tx_wr++;
+  }
+
+  return len;
 }
 
 /* USER CODE END 4 */
