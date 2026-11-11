@@ -28,6 +28,8 @@
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
+#include "usbd_cdc.h"
+#include "usbd_cdc_if.h"
 
 /* USER CODE END Includes */
 
@@ -45,6 +47,8 @@
 
 #define TX_RING_SIZE 256U  //必须为 2 的幂，才能用按位与代替取余；256B ≈ 11 帧状态帧（23B/帧），50Hz 下约 0.2s 缓冲余量
 #define TX_RING_MASK (TX_RING_SIZE - 1U)  //物理下标掩码：wr & MASK 等价于 wr % 256。若把容量改成非 2 的幂（如 200），& 199 不再等于 % 200，数据错位而编译零警告
+#define TX_PKT_SIZE 64U  //USB全速端点单包上限
+
 /* USER CODE END PD */
 
 /* Private macro -------------------------------------------------------------*/
@@ -77,6 +81,10 @@ volatile uint32_t g_tx_drop;  //因缓冲满而丢弃的字节数。>0 说明 pr
 volatile uint32_t g_tx_sent;  //已交给 USB 外设的字节数，只代表「已入端点」不代表主机收到；与 g_tx_drop 一起核对总量守恒
 
 static uint32_t s_rst_csr;  //复位标志快照：必须在 __HAL_RCC_CLEAR_RESET_FLAGS() 之前读，之后 reset_cause() 只认这个值——标志一旦清掉，寄存器里就全是 0
+extern USBD_HandleTypeDef hUsbDeviceFS;  //声明句柄用于访问.pClassData
+static uint8_t s_tx_staging[TX_PKT_SIZE];  //交给USB的实在缓冲
+uint32_t s_printf_seq;  //打印轮次序号
+uint32_t s_last_print_tick;  //上次打印的g_tick_ms
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -86,6 +94,8 @@ static void key_scan(void);  //消抖函数的声明，定义在BEGIN 4
 static uint16_t ring_push(const uint8_t *p, uint16_t len);  //环形缓冲器的声明
 int _write(int file, char *ptr, int len);
 static const char *reset_cause(void);
+static void cdc_pump(void);  //把ring_push里面的东西搬走
+static void self_test_printf(void);  //周期性输出
 
 /* USER CODE END PFP */
 
@@ -161,6 +171,14 @@ int main(void)
       s_last_scan_tick = now;
       key_scan();
     }
+
+
+    //self_test_printf每秒调用一次
+    if ((now - s_last_print_tick) >= 1000) {
+      s_last_print_tick += 1000;
+      self_test_printf();
+    }
+    cdc_pump();
 
   }
   /* USER CODE END 3 */
@@ -297,6 +315,42 @@ static const char *reset_cause(void) {
   }
 
   return "UNK";
+}
+
+
+static void cdc_pump(void) {
+  //USB配置好了吗
+  if(hUsbDeviceFS.pClassData == NULL) { return; }
+    //上一包发完了吗
+  USBD_CDC_HandleTypeDef *hcdc = (USBD_CDC_HandleTypeDef *)hUsbDeviceFS.pClassData;
+  if (hcdc->TxState != 0) { return; }
+
+  //有数据吗
+  uint16_t avail = (uint16_t)(s_tx_wr - s_tx_rd);
+  if (avail == 0) { return; }
+
+  uint16_t n = avail;
+  if (n > TX_PKT_SIZE) { n = TX_PKT_SIZE; }  //USB全速端点单包最多64字节
+  uint16_t phys = s_tx_rd & TX_RING_MASK;
+  uint16_t room = TX_RING_SIZE - phys;
+  if (n > room) { n = room; }
+
+  //传送
+  memcpy(s_tx_staging, &s_tx_ring[phys], n);
+  if (CDC_Transmit_FS(s_tx_staging, n) == USBD_OK) {
+    s_tx_rd += n;
+    g_tx_sent += n;
+
+  }
+}
+
+
+static void self_test_printf(void) {
+  uint32_t seq = s_printf_seq++;
+
+  printf("[%05lu] ec_round2-260411615\r\n", seq);
+  printf("[%05lu] clk=%lu\r\n", seq,SystemCoreClock);
+  printf("[%05lu] rst=%s csr=%08lX\r\n", seq, reset_cause(), s_rst_csr);
 }
 /* USER CODE END 4 */
 
